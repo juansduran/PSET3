@@ -1,7 +1,8 @@
 #PSET3#
-
+rm(list = ls())
 #usamos la libreria
 library("pacman")
+
 
 p_load(tidyverse,
        sf,
@@ -13,6 +14,23 @@ p_load(tidyverse,
 #Cargamos las bases
 train <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/train.Rds")
 test <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/test.Rds")
+#Ponemos sistema de coordenadas
+
+db<-data.frame(place= train$property_id,
+               lat= train$lat,
+               long= train$lon
+)
+db<-db %>% mutate(latp=lat,longp=long)
+
+db<-st_as_sf(db,coords=c('longp','latp'),crs=4626)
+
+
+train <- train %>% mutate(geometry = db$geometry )
+
+
+
+#####
+
 
 #Dividimos la base para Bogotá y para Medellín"
 
@@ -22,16 +40,22 @@ train_nevera <- subset(train, train$l3=="Bogotá D.C")
 #Para bogotá vamos a agregar parques y universidades pensando 
 # en que en esta zona vive población universitaria
 ######
-transmis_rolos <- opq(bbox=getbb("Bogota Colombia")) %>%
+transmi_rolos <- opq(bbox=getbb("Bogota Colombia")) %>%
   add_osm_feature(key="amenity", value ="bus_station")
 transmi_rolos_sf <- osmdata_sf(transmi_rolos)
 transmi_rolos_geom <- transmi_rolos_sf$osm_points
 
+#Le ponemos el sistema de coordenadas de train
+transmis_rolos_new <- st_transform(transmi_rolos_geom, cres=st_crs(train_nevera))
+
+#Repetimos para universidades
 universidades_rolas <- opq(bbox=getbb("Bogota Colombia")) %>%
   add_osm_feature(key="amenity", value ="university")
 uni_rolas_sf <- osmdata_sf(universidades_rolas)
 uni_rolas_geom <- uni_rolas_sf$osm_polygons
 
+#Le ponemos el sistema de coordenadas de train
+uni_rolas_new <- st_transform(uni_rolas_geom, cres=st_crs(train_nevera))
 
 
 ##Creamos el mapa en OSM para Bogotá
@@ -40,6 +64,27 @@ leaflet() %>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
   addCircleMarkers(data = transmi_rolos_geom, col = "blue") %>%
   addCircles(data=train_nevera, col = "red")
+
+####Distancia promedio a universidades de las casas
+# Primero sacamos la distancia a una universidad
+
+st_crs(uni_rolas_new)
+st_crs(train_nevera)
+dist_uni <- st_distance(x=train_nevera, y=uni_rolas_new)
+dist_uni
+
+#ahora sacamos la distancia promedio
+prom_dist_uni <- apply(dist_uni, 1, mean)
+prom_dist_uni
+
+#Pegamos a la base
+
+
+####Distancia mínima a una estación de transmilenio
+
+
+
+
 
 
 ##El poblado en medellín es una zona rosa turística, por esta razón buscaremos cercanía a restaurantes
@@ -62,6 +107,11 @@ leaflet() %>%
   addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
   addCircles(data=train_medallo, col = "red")
 
+###########################
+#### Repetimos para la base test
+
+test_medallo <- subset(test, test$l3=="Medellín")
+test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
 
@@ -69,52 +119,4 @@ leaflet() %>%
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#INTENTO 1
-require("sf")
-
-require("ggplot2")
-require("dplyr")
-
-library(ggplot2)
-library(dplyr)
-library(tidyverse)
-install.packages("sf")
-library(sf)
-install.packages("osmdata")
-
-db<-data.frame(place= train$property_id,
-               lat= train$lat,
-               long= train$lon
-)
-db<-db %>% mutate(latp=lat,longp=long)
-
-db<-st_as_sf(db,coords=c('longp','latp'),crs=4626)
-
-
-train_geometry <- train 
-
-train_geometry <- train_geometry %>% mutate(geometry = db$geometry )
-
-ggplot()+
-  geom_sf(data=train_geometry,aes(geometry=geometry)) +
-theme_bw()  + theme(axis.title =element_blank(),
-                   panel.grid.major = element_blank(),
-                   panel.grid.minor = element_blank(),
-                   axis.text = element_text(size=6))
-
-
-
+#########Fin del script
