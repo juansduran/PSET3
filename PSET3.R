@@ -120,7 +120,6 @@ train$garaje12[train$garaje12 == 4] <- 1
 train$ascensor9[train$ascensor == 2] <- 1
 
 
-
 #eliminar columnas que ya no se necesitan 
 
 train$global = NULL
@@ -156,6 +155,12 @@ train$amoblado7 = NULL
 
 ####################
 
+
+######################################################
+# test
+
+####################
+
 #Ponemos sistema de coordenadas para los aptos
 
 install.packages("stringr")
@@ -166,61 +171,61 @@ library(stringr)
 #convertir todo el texto en minusculas
 
 
-train$description <- tolower(train$description)
+test$description <- tolower(test$description)
 
 #quitar tildes
 
-train$description <- iconv(train$description, from = "UTF-8", to = "ASCII//TRANSLIT")
+test$description <- iconv(test$description, from = "UTF-8", to = "ASCII//TRANSLIT")
 
 
 #elimnar caracter especial
 
-train$description <- str_replace_all(train$description, "[^[:alnum:]]", " ")
+test$description <- str_replace_all(test$description, "[^[:alnum:]]", " ")
 
 
 #eliminamos espacios extras
 
-train$description <- gsub("\\s+", " ", str_trim(train$description))
+test$description <- gsub("\\s+", " ", str_trim(test$description))
 
-typos <- aregexec("garajes", train$description)
-regmatches(train$description, typos)
+typos <- aregexec("garajes", test$description)
+regmatches(test$description, typos)
 
 #contamos para ver con cuantos nas contamos
 
-sum(is.na(train$description))
+sum(is.na(test$description))
 
 # eliminamos los na
 
-train <- train[!is.na(train$description),]
+test <- test[!is.na(test$description),]
 
 #creamos nuevas variables del texto
 
 #conjunto residencial
 
-train <- train %>% mutate(conjunto = str_detect(train$description, "conjunto"))
+test <- test %>% mutate(conjunto = str_detect(test$description, "conjunto"))
 
 #ascensor
-train <- train %>% mutate(ascensor = str_detect(train$description, "ascensor"))
-train <- train %>% mutate(ascensor1 = str_detect(train$description, "acensor"))
-train <- train %>% mutate(ascensor2 = str_detect(train$description, "asensor"))
+test <- test %>% mutate(ascensor = str_detect(test$description, "ascensor"))
+test <- test %>% mutate(ascensor1 = str_detect(test$description, "acensor"))
+test <- test %>% mutate(ascensor2 = str_detect(test$description, "asensor"))
 
 #garaje
-train <- train %>% mutate(garaje = str_detect(train$description, "garaje"))
-train <- train %>% mutate(garaje1 = str_detect(train$description, "garage"))
-train <- train %>% mutate(garaje2 = str_detect(train$description, "garages"))
-train <- train %>% mutate(garaje3 = str_detect(train$description, "garajes"))
-train <- train %>% mutate(garaje4 = str_detect(train$description, "garje"))
-train <- train %>% mutate(garaje5 = str_detect(train$description, "garge"))
+test <- test %>% mutate(garaje = str_detect(test$description, "garaje"))
+test <- test %>% mutate(garaje1 = str_detect(test$description, "garage"))
+test <- test %>% mutate(garaje2 = str_detect(test$description, "garages"))
+test <- test %>% mutate(garaje3 = str_detect(test$description, "garajes"))
+test <- test %>% mutate(garaje4 = str_detect(test$description, "garje"))
+test <- test %>% mutate(garaje5 = str_detect(test$description, "garge"))
 
 #amoblado
-train <- train %>% mutate(amoblado = str_detect(train$description, "amoblado"))
-train <- train %>% mutate(amoblado1 = str_detect(train$description, "amoblada"))
-train <- train %>% mutate(amoblado2 = str_detect(train$description, "amovlada"))                
-train <- train %>% mutate(amoblado3 = str_detect(train$description, "amovlado"))
+test <- test %>% mutate(amoblado = str_detect(test$description, "amoblado"))
+test <- test %>% mutate(amoblado1 = str_detect(test$description, "amoblada"))
+test <- test %>% mutate(amoblado2 = str_detect(test$description, "amovlada"))                
+test <- test %>% mutate(amoblado3 = str_detect(test$description, "amovlado"))
 
 #convertir los true en 1 y 0
 
-train <- train %>%
+test <- test %>%
   mutate(conjunto1 = ifelse(conjunto=="TRUE", 1,0),
          ascensor6 = ifelse(ascensor=="TRUE", 1,0),
          ascensor7 = ifelse(ascensor1=="TRUE", 1,0),
@@ -238,75 +243,69 @@ train <- train %>%
 
 #sumarlos y dejar listas las variables
 
-train <- train %>% mutate(ascensor9 = ascensor6 + ascensor7 + ascensor8)
-train <- train %>% mutate(garaje12 = garaje6 + garaje7 + garaje8 + garaje9 + garaje10 + garaje11)
-train <- train %>% mutate(amoblado8 = amoblado4 + amoblado5 + amoblado6 + amoblado7 )
+test <- test %>% mutate(ascensor9 = ascensor6 + ascensor7 + ascensor8)
+test <- test %>% mutate(garaje12 = garaje6 + garaje7 + garaje8 + garaje9 + garaje10 + garaje11)
+test <- test %>% mutate(amoblado8 = amoblado4 + amoblado5 + amoblado6 + amoblado7 )
 
 
-table(train$amoblado8)
-table(train$garaje12)
-table(train$conjunto)
-table(train$ascensor9)
+table(test$amoblado8)
+table(test$garaje12)
+table(test$conjunto)
+table(test$ascensor9)
 
 #cambiar la codificación para que queden en 1 y 0
 
 #garaje
-train$garaje12[train$garaje12 == 2] <- 1
-train$garaje12[train$garaje12 == 3] <- 1
-train$garaje12[train$garaje12 == 4] <- 1
+test$garaje12[test$garaje12 == 2] <- 1
+test$garaje12[test$garaje12 == 3] <- 1
+test$garaje12[test$garaje12 == 4] <- 1
 
 #ascensor
 
-train$ascensor9[train$ascensor == 2] <- 1
-
-
+test$ascensor9[test$ascensor == 2] <- 1
 
 #eliminar columnas que ya no se necesitan 
 
-train$global = NULL
-train$conjunto1 = NULL
-train$ascensor = NULL
-train$ascensor1 = NULL
-train$ascensor2 = NULL
-train$ascensor3 = NULL
-train$ascensor6 = NULL
-train$ascensor7= NULL
-train$ascensor8 = NULL
-train$garaje = NULL
-train$garaje1 = NULL
-train$garaje2 = NULL
-train$garaje3 = NULL
-train$garaje4 = NULL
-train$garaje5 = NULL
-train$garaje6 = NULL
-train$garaje7 = NULL
-train$garaje8 = NULL
-train$garaje9 = NULL
-train$garaje10 = NULL
-train$garaje11 = NULL
-train$amoblado = NULL
-train$amoblado1 = NULL
-train$amoblado2 = NULL
-train$amoblado3 = NULL
-train$amoblado4 = NULL
-train$amoblado5 = NULL
-train$amoblado6 = NULL
-train$amoblado7 = NULL
+test$global = NULL
+test$conjunto1 = NULL
+test$ascensor = NULL
+test$ascensor1 = NULL
+test$ascensor2 = NULL
+test$ascensor3 = NULL
+test$ascensor6 = NULL
+test$ascensor7= NULL
+test$ascensor8 = NULL
+test$garaje = NULL
+test$garaje1 = NULL
+test$garaje2 = NULL
+test$garaje3 = NULL
+test$garaje4 = NULL
+test$garaje5 = NULL
+test$garaje6 = NULL
+test$garaje7 = NULL
+test$garaje8 = NULL
+test$garaje9 = NULL
+test$garaje10 = NULL
+test$garaje11 = NULL
+test$amoblado = NULL
+test$amoblado1 = NULL
+test$amoblado2 = NULL
+test$amoblado3 = NULL
+test$amoblado4 = NULL
+test$amoblado5 = NULL
+test$amoblado6 = NULL
+test$amoblado7 = NULL
 
 
 
-                          
-db<-data.frame(place= train$property_id,
-               lat= train$lat,
-               long= train$lon
+
+db<-data.frame(place= test$property_id,
+               lat= test$lat,
+               long= test$lon
 )
 db<-db %>% mutate(latp=lat,longp=long)
 
 db<-st_as_sf(db,coords=c('longp','latp'),crs=4626)
-
-
-train <- train %>% mutate(geometry = db$geometry )
-
 
 
 #####
