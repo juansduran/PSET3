@@ -13,6 +13,7 @@ p_load(tidyverse,
 
 #Cargamos las bases
 train <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/train.Rds")
+
 test <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/test.Rds")
 #Ponemos sistema de coordenadas
 
@@ -30,12 +31,47 @@ train <- train %>% mutate(geometry = db$geometry )
 
 
 #####
+##Sacamos información de el Poblado
+
+base_train_test <- bind_rows(train,test) %>% st_as_sf(coords=c("lon","lat"),crs=4626)
+
+#Definimos sólo el área del poblado
+PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado", 
+                 featuretype = "boundary:administrative", 
+                 format_out = "sf_polygon") 
+#Dejamos con el mismo sistema de coordenadas
+
+st_crs(PH_Poblado)==st_crs(base_train_test$geometry)
+PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(base_train_test$geometry))
 
 
-#Dividimos la base para Bogotá y para Medellín"
+# Observaciones en el poblado 
+Pobladation <- base_train_test[PH_Poblado,]
 
-train_medallo <- subset(train, train$l3=="Medellín")
-train_nevera <- subset(train, train$l3=="Bogotá D.C")
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data=PH_Poblado, col = "red") %>%
+  addCircles(data=Pobladation)
+
+
+######Definimos el área de chapinero
+chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota", 
+                    featuretype = "boundary:administrative", 
+                    format_out = "sf_polygon") %>% .$multipolygon
+#Dejamos con el mismo sistema de coordenadas
+
+st_crs(chapi_papi)==st_crs(base_train_test$geometry)
+chapi_papi <- st_transform(chapi_papi, crs=st_crs(base_train_test$geometry))
+
+# Observaciones en chapinero
+chapineration <- base_train_test[chapi_papi,]
+
+
+leaflet() %>%
+  addTiles() %>% 
+  addPolygons(data=chapi_papi,color="red") %>% 
+  addCircles(data=chapineration)
+
 
 #Para bogotá vamos a agregar parques y universidades pensando 
 # en que en esta zona vive población universitaria
@@ -46,7 +82,7 @@ transmi_rolos_sf <- osmdata_sf(transmi_rolos)
 transmi_rolos_geom <- transmi_rolos_sf$osm_points
 
 #Le ponemos el sistema de coordenadas de train
-transmis_rolos_new <- st_transform(transmi_rolos_geom, cres=st_crs(train_nevera))
+transmi_rolos_new <- st_transform(transmi_rolos_geom, crs=st_crs(train_nevera$geometry))
 
 #Repetimos para universidades
 universidades_rolas <- opq(bbox=getbb("Bogota Colombia")) %>%
@@ -55,7 +91,7 @@ uni_rolas_sf <- osmdata_sf(universidades_rolas)
 uni_rolas_geom <- uni_rolas_sf$osm_polygons
 
 #Le ponemos el sistema de coordenadas de train
-uni_rolas_new <- st_transform(uni_rolas_geom, cres=st_crs(train_nevera))
+uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(train_nevera$geometry))
 
 
 ##Creamos el mapa en OSM para Bogotá
@@ -68,9 +104,9 @@ leaflet() %>%
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
 
-st_crs(uni_rolas_new)
-st_crs(train_nevera)
-dist_uni <- st_distance(x=train_nevera, y=uni_rolas_new)
+st_crs(uni_rolas_geom)
+st_crs(train_nevera$geometry)
+dist_uni <- st_distance(x=train_nevera$geometry, y=uni_rolas_new)
 dist_uni
 
 #ahora sacamos la distancia promedio
@@ -80,7 +116,13 @@ prom_dist_uni
 #Pegamos a la base
 
 
-####Distancia mínima a una estación de transmilenio
+####Distancia a una estación de transmilenio
+dist_tra <- st_distance(x=train_nevera$geometry, y=transmi_rolos_new)
+dist_tra
+
+####Distancia mínima a una estación de transmileni
+min_dist_tra <- apply(dist_uni, 1, mean)
+min_dist_tra 
 
 
 
