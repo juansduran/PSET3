@@ -302,26 +302,31 @@ test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
 ###Preparamos la base de train
-##ponemos sistema de coordenadas para train Bogota y Medellin
-train_nevera<-data.frame(place= train_nevera$property_id,
+##ponemos sistema de coordenadas para train Bogota
+train_nevera_1 <- data.frame()
+train_nevera_1<-data.frame(place= train_nevera$property_id,
                lat= train_nevera$lat,
                long= train_nevera$lon
-)
-train_nevera<-train_nevera %>% mutate(latp=lat,longp=long)
+               )
+train_nevera_1<-train_nevera_1 %>% mutate(latp=lat,longp=long)
 
-train_nevera<-st_as_sf(train_nevera,coords=c('longp','latp'),crs=4626)
+train_nevera_1<-st_as_sf(train_nevera_1,coords=c('longp','latp'),crs=4626)
 
-##ponemos sistema de coordenadas para train Bogota y Medellin
-train_medallo<-data.frame(place= train_medallo$property_id,
+train_nevera$geometry <- train_nevera_1$geometry
+
+##ponemos sistema de coordenadas para train Medellin
+train_medallo_1<-data.frame(place= train_medallo$property_id,
                          lat= train_medallo$lat,
                          long= train_medallo$lon
 )
-train_medallo<-train_medallo %>% mutate(latp=lat,longp=long)
+train_medallo_1<-train_medallo_1 %>% mutate(latp=lat,longp=long)
 
-train_medallo<-st_as_sf(train_medallo,coords=c('longp','latp'),crs=4626)
+train_medallo<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
 
+train_medallo$geometry <- train_medallo_1$geometry
 
-
+rm(train_medallo_1)
+rm(train_nevera_1)
 #####
 ##Sacamos información de el Poblado
 
@@ -499,24 +504,28 @@ test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 ##Preparamos la base de test
 ##ponemos sistema de coordenadas para test Bogota y Medellin
-test_nevera<-data.frame(place= test_nevera$property_id,
+test_nevera_1<-data.frame(place= test_nevera$property_id,
                         lat= test_nevera$lat,
                         long= test_nevera$lon
 )
-test_nevera<-test_nevera %>% mutate(latp=lat,longp=long)
+test_nevera_1<-test_nevera_1 %>% mutate(latp=lat,longp=long)
 
-test_nevera<-st_as_sf(test_nevera,coords=c('longp','latp'),crs=4626)
+test_nevera_1<-st_as_sf(test_nevera_1,coords=c('longp','latp'),crs=4626)
 
+test_nevera$geometry <- test_nevera_1$geometry
 ##ponemos sistema de coordenadas para test Bogota y Medellin
-test_medallo<-data.frame(place= test_medallo$property_id,
+test_medallo_1<-data.frame(place= test_medallo$property_id,
                          lat= test_medallo$lat,
                          long= test_medallo$lon
 )
-test_medallo<-test_medallo %>% mutate(latp=lat,longp=long)
+test_medallo_1<-test_medallo_1 %>% mutate(latp=lat,longp=long)
 
-test_medallo<-st_as_sf(test_medallo,coords=c('longp','latp'),crs=4626)
+test_medallo_1<-st_as_sf(test_medallo_1,coords=c('longp','latp'),crs=4626)
 
+test_medallo$geometry <- test_medallo_1$geometry 
 
+rm(test_nevera_1)
+rm(test_medallo_1)
 
 #####
 ##Sacamos información de el Poblado
@@ -677,8 +686,15 @@ test_medallo <- test_medallo %>%
 
 
 
-##Modelos de predicción
+##Modelos de predicción. Se correrán para Medellin y Bogota para
+#encontrar el mejor modelo para cada ciudad
 
+#1 Regresion sin tener en cuenta correlación espacial
 
+reg_1 <-lm()
+
+#2 regresion considerando correlación espacial
+<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
+summary(sar.chi)
 
 #########Fin del script
