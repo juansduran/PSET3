@@ -679,4 +679,6 @@ test_medallo <- test_medallo %>%
 
 ##Modelos de predicción
 
+
+
 #########Fin del script
