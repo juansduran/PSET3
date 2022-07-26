@@ -94,7 +94,6 @@ train <- train %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, 
 train$metros_tot <- as.numeric(train$metros_tot)
 
 
-
 #para eliminar todas las filas que contengan na en la columna de metros
 train <- train %>% drop_na(metros_tot)
 
@@ -295,6 +294,86 @@ test$description <- gsub("\\s+", " ", str_trim(test$description))
 typos <- aregexec("garajes", test$description)
 regmatches(test$description, typos)
 
+#################
+
+
+#metros cuadrados
+
+#se extraen de acuerdo a los patrones y se crea nueva variable
+test <- test %>% mutate(metros2 = str_extract(string = test$description, pattern = paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af)))
+
+#nos quedamos solo con los valores numéricos
+test <- test %>% mutate(metros3 = str_extract(string = test$metros2, pattern = paste0(digit,"|", digit2,"|", digit3,"|", digit4,"|", digit5)))
+
+#remplazamos todos las palabras que tengan el número y la palabra pegada
+
+test<- test %>% mutate(metros4 = str_replace_all(string = test$metros2, pattern = paste0(mdos, "|", metrostr, "|", metr), replacement = ""))
+
+#lo convertimos a un valor númérico
+test$metros3 <- as.numeric(test$metros3)
+
+#nos quedamos con la información
+test <- test %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, metros4))
+
+test$metros_tot <- as.numeric(test$metros_tot)
+
+
+
+#para eliminar todas las filas que contengan na en la columna de metros
+test <- test %>% drop_na(metros_tot)
+
+#arreglamos otros datos inconsistentes
+
+test <- test %>% mutate(mts_tot =ifelse(metros_tot<25, 25, metros_tot ))
+
+
+test <- test %>% mutate(mts_totales2 =ifelse(mts_tot>3000, 3000, mts_tot ))
+
+#eliminamos nuevas variables
+
+test$metros2 = NULL
+test$metros3 = NULL
+test$metros4 = NULL
+test$metros_tot = NULL
+test$mts_tot = NULL
+
+
+#contar na
+sum(is.na(test$metros_tot))
+
+
+# sacamos más baños para otros del description
+
+test <- test %>% mutate(banos2 = str_extract(string = test$description, pattern = paste0(ah,"|",ai))) 
+
+test <- test %>% mutate(banos3 = str_extract(string = test$banos2, pattern = digit))
+
+#se convierte en numérico puesto que se saca de texto
+test$banos3 <- as.numeric(test$banos3)
+#baños totales
+
+#convertir na a 0
+
+test$bathrooms[is.na(test$bathrooms)] <- 0
+test$banos3[is.na(test$banos3)] <- 0
+
+test <- test %>% mutate(tot_banos= bathrooms+banos3)
+
+
+
+test$tot_banos[test$tot_banos == 0] <- 1
+
+table(test$tot_banos)                                                                
+
+
+#elimino las variabkes de baños que no uso
+
+test$banos2 = NULL
+test$banos3 = NULL
+
+########################################
+
+
 #contamos para ver con cuantos nas contamos
 
 sum(is.na(test$description))
@@ -371,8 +450,8 @@ test$ascensor9[test$ascensor == 2] <- 1
 
 #eliminar columnas que ya no se necesitan 
 
-test$global = NULL
-test$conjunto1 = NULL
+
+test$conjunto = NULL
 test$ascensor = NULL
 test$ascensor1 = NULL
 test$ascensor2 = NULL
