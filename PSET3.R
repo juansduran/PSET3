@@ -118,7 +118,6 @@ train$metrosl2 = NULL
 sum(is.na(train$metros_tot))
 
 
-
 # sacamos más baños para otros del description
 
 train <- train %>% mutate(banos2 = str_extract(string = train$description, pattern = paste0(ah,"|",ai))) 
@@ -149,7 +148,13 @@ train$tot_banos[train$tot_banos == 2010] <- 1
 train$tot_banos[train$tot_banos == 2016] <- 1
 
 table(train$metros_tot)                                                                
+
                                                                  #paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af),0)))
+
+#elimino las variabkes de baños que no uso
+
+train$banos2 = NULL
+train$banos3 = NULL
 
 #contamos para ver con cuantos nas contamos
 
