@@ -6,20 +6,22 @@ library("pacman")
 
 rm(list = ls())
 
-require("sf")
 
 p_load(tidyverse,
        sf,
        rio,
        leaflet,
        tmaptools,
-       osmdata)
+       osmdata,
+       stringr)
 
 
 #Cargamos las bases
 train <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/train.Rds")
 
 test <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/test.Rds")
+
+
 
 #############################3333
 #Agregamos variables con análisis de textos
@@ -161,12 +163,6 @@ train$amoblado7 = NULL
 
 ####################
 
-#Ponemos sistema de coordenadas para los aptos
-
-install.packages("stringr")
-library(stringr)
-
-
 
 #convertir todo el texto en minusculas
 
@@ -296,22 +292,38 @@ test$amoblado5 = NULL
 test$amoblado6 = NULL
 test$amoblado7 = NULL
 
+#partimos la base para Bogota y Medellin
+
+train_medallo <- subset(train, train$l3=="Medellín")
+train_nevera <- subset(train, train$l3=="Bogotá D.C")
+test_medallo <- subset(test, test$l3=="Medellín")
+test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
 
-db<-data.frame(place= test$property_id,
-               lat= test$lat,
-               long= test$lon
+###Preparamos la base de train
+##ponemos sistema de coordenadas para train Bogota y Medellin
+train_nevera<-data.frame(place= train_nevera$property_id,
+               lat= train_nevera$lat,
+               long= train_nevera$lon
 )
-db<-db %>% mutate(latp=lat,longp=long)
+train_nevera<-train_nevera %>% mutate(latp=lat,longp=long)
 
-db<-st_as_sf(db,coords=c('longp','latp'),crs=4626)
+train_nevera<-st_as_sf(train_nevera,coords=c('longp','latp'),crs=4626)
+
+##ponemos sistema de coordenadas para train Bogota y Medellin
+train_medallo<-data.frame(place= train_medallo$property_id,
+                         lat= train_medallo$lat,
+                         long= train_medallo$lon
+)
+train_medallo<-train_medallo %>% mutate(latp=lat,longp=long)
+
+train_medallo<-st_as_sf(train_medallo,coords=c('longp','latp'),crs=4626)
+
 
 
 #####
 ##Sacamos información de el Poblado
-
-base_train_test <- bind_rows(train,test) %>% st_as_sf(coords=c("lon","lat"),crs=4626)
 
 #Definimos sólo el área del poblado
 PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado", 
@@ -319,12 +331,12 @@ PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado",
                  format_out = "sf_polygon") 
 #Dejamos con el mismo sistema de coordenadas
 
-st_crs(PH_Poblado)==st_crs(base_train_test$geometry)
-PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(base_train_test$geometry))
-
+st_crs(PH_Poblado)==st_crs(train_medallo$geometry)
+PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(train_medallo$geometry))
+st_crs(PH_Poblado)==st_crs(train_medallo$geometry)
 
 # Observaciones en el poblado 
-Pobladation <- base_train_test[PH_Poblado,]
+Pobladation <- train_medallo[PH_Poblado,]
 
 leaflet() %>%
   addTiles() %>%
@@ -338,11 +350,11 @@ chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota",
                     format_out = "sf_polygon") %>% .$multipolygon
 #Dejamos con el mismo sistema de coordenadas
 
-st_crs(chapi_papi)==st_crs(base_train_test$geometry)
-chapi_papi <- st_transform(chapi_papi, crs=st_crs(base_train_test$geometry))
-
+st_crs(chapi_papi)==st_crs(train_nevera$geometry)
+chapi_papi <- st_transform(chapi_papi, crs=st_crs(train_nevera$geometry))
+st_crs(chapi_papi)==st_crs(train_nevera$geometry)
 # Observaciones en chapinero
-chapineration <- base_train_test[chapi_papi,]
+chapineration <- train_nevera[chapi_papi,]
 
 
 leaflet() %>%
@@ -350,8 +362,9 @@ leaflet() %>%
   addPolygons(data=chapi_papi,color="red") %>% 
   addCircles(data=chapineration)
 
+####Variables adicionales de OSM##########
 
-#Para bogotá vamos a agregar parques y universidades pensando 
+#Para bogotá vamos a agregar estaciones de transmilenio y universidades pensando 
 # en que en esta zona vive población universitaria
 ######
 transmi_rolos <- opq(bbox=getbb("Bogota Colombia")) %>%
@@ -361,6 +374,7 @@ transmi_rolos_geom <- transmi_rolos_sf$osm_points
 
 #Le ponemos el sistema de coordenadas de train
 transmi_rolos_new <- st_transform(transmi_rolos_geom, crs=st_crs(train_nevera$geometry))
+st_crs(transmi_rolos_new)==st_crs(train_nevera$geometry)
 
 #Repetimos para universidades
 universidades_rolas <- opq(bbox=getbb("Bogota Colombia")) %>%
@@ -370,26 +384,28 @@ uni_rolas_geom <- uni_rolas_sf$osm_polygons
 
 #Le ponemos el sistema de coordenadas de train
 uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(train_nevera$geometry))
-
+st_crs(uni_rolas_new)==st_crs(train_nevera$geometry)
 
 ##Creamos el mapa en OSM para Bogotá
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
-  addCircleMarkers(data = transmi_rolos_geom, col = "blue") %>%
-  addCircles(data=train_nevera, col = "red")
+  addPolygons(data=chapi_papi,color="yellow") %>% 
+  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
+  addCircles(data=chapineration, col = "red")
 
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
 
-st_crs(uni_rolas_geom)
-st_crs(train_nevera$geometry)
+st_crs(uni_rolas_geom)==st_crs(train_nevera$geometry)
+uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(train_nevera$geometry))
 dist_uni <- st_distance(x=train_nevera$geometry, y=uni_rolas_new)
 dist_uni
 
+
 #ahora sacamos la distancia promedio
 prom_dist_uni <- apply(dist_uni, 1, mean)
-prom_dist_uni
+
 
 #Pegamos a la base
 
@@ -399,22 +415,26 @@ dist_tra <- st_distance(x=train_nevera$geometry, y=transmi_rolos_new)
 dist_tra
 
 ####Distancia mínima a una estación de transmileni
-min_dist_tra <- apply(dist_uni, 1, mean)
+min_dist_tra <- apply(dist_tra, 1, min)
 min_dist_tra 
 
 
+#################
+#Agregamos las distancias a la base
+train_nevera <- train_nevera %>%
+  mutate(Transmi = min_dist_tra)
 
-
-
+train_nevera <- train_nevera %>%
+  mutate(Universidad = prom_dist_uni)
 
 ##El poblado en medellín es una zona rosa turística, por esta razón buscaremos cercanía a restaurantes
 # y parques
-restaurantes_paisas <- opq(bbox=getbb("Medellin Colombia")) %>%
+restaurantes_paisas <- opq(bbox=getbb("Comuna 14 - El Poblado")) %>%
   add_osm_feature(key="amenity", value ="restaurant")
 restaurantes_paisas_sf <- osmdata_sf(restaurantes_paisas)
 restaurantes_paisas_geom <- restaurantes_paisas_sf$osm_points
 
-parques_paisas <- opq(bbox=getbb("Medellin Colombia")) %>%
+parques_paisas <- opq(bbox=getbb("Comuna 14 - El Poblado")) %>%
   add_osm_feature(key="leisure", value ="park")
 par_paisas_sf <- osmdata_sf(parques_paisas)
 par_paisas_geom <- par_paisas_sf$osm_polygons
@@ -427,16 +447,236 @@ leaflet() %>%
   addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
   addCircles(data=train_medallo, col = "red")
 
-###########################
+
+####Distancia promedio a un restaurante
+# Primero sacamos la distancia a un restaurante
+restaurantes_paisas_geom <- st_transform(restaurantes_paisas_geom, crs=st_crs(train_medallo$geometry))
+st_crs(restaurantes_paisas_geom)==st_crs(train_medallo$geometry)
+dist_rest <- st_distance(x=train_medallo$geometry, y=restaurantes_paisas_geom)
+dist_rest
+
+#ahora sacamos la distancia promedio
+prom_dist_rest <- apply(dist_rest, 1, mean)
+prom_dist_rest
+
+
+
+
+####Distancia a un parque
+par_paisas_geom <- st_transform(par_paisas_geom, crs=st_crs(train_medallo$geometry))
+st_crs(par_paisas_geom)==st_crs(train_medallo$geometry)
+dist_park <- st_distance(x=train_medallo$geometry, y=par_paisas_geom)
+dist_park
+
+####Distancia mínima a un parque
+min_dist_park <- apply(dist_park, 1, min)
+min_dist_park
+
+#Agregamos las distancias a la base
+train_medallo <- train_medallo %>%
+  mutate(Restaurante = prom_dist_rest)
+
+train_medallo <- train_medallo %>%
+  mutate(Parque = min_dist_park)
+
+
+
+
+
+
+
+
+
+
+############################################
+
 #### Repetimos para la base test
 
+############################################
 test_medallo <- subset(test, test$l3=="Medellín")
 test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
+##Preparamos la base de test
+##ponemos sistema de coordenadas para test Bogota y Medellin
+test_nevera<-data.frame(place= test_nevera$property_id,
+                        lat= test_nevera$lat,
+                        long= test_nevera$lon
+)
+test_nevera<-test_nevera %>% mutate(latp=lat,longp=long)
+
+test_nevera<-st_as_sf(test_nevera,coords=c('longp','latp'),crs=4626)
+
+##ponemos sistema de coordenadas para test Bogota y Medellin
+test_medallo<-data.frame(place= test_medallo$property_id,
+                         lat= test_medallo$lat,
+                         long= test_medallo$lon
+)
+test_medallo<-test_medallo %>% mutate(latp=lat,longp=long)
+
+test_medallo<-st_as_sf(test_medallo,coords=c('longp','latp'),crs=4626)
+
+
+
+#####
+##Sacamos información de el Poblado
+
+#Definimos sólo el área del poblado
+PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado", 
+                    featuretype = "boundary:administrative", 
+                    format_out = "sf_polygon") 
+#Dejamos con el mismo sistema de coordenadas
+
+st_crs(PH_Poblado)==st_crs(test_medallo$geometry)
+PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(test_medallo$geometry))
+st_crs(PH_Poblado)==st_crs(test_medallo$geometry)
+
+# Observaciones en el poblado 
+Pobladation <- test_medallo[PH_Poblado,]
+
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data=PH_Poblado, col = "red") %>%
+  addCircles(data=Pobladation)
+
+
+######Definimos el área de chapinero
+chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota", 
+                    featuretype = "boundary:administrative", 
+                    format_out = "sf_polygon") %>% .$multipolygon
+#Dejamos con el mismo sistema de coordenadas
+
+st_crs(chapi_papi)==st_crs(test_nevera$geometry)
+chapi_papi <- st_transform(chapi_papi, crs=st_crs(test_nevera$geometry))
+st_crs(chapi_papi)==st_crs(test_nevera$geometry)
+# Observaciones en chapinero
+chapineration <- test_nevera[chapi_papi,]
+
+
+leaflet() %>%
+  addTiles() %>% 
+  addPolygons(data=chapi_papi,color="red") %>% 
+  addCircles(data=chapineration)
+
+####Variables adicionales de OSM##########
+
+#Para bogotá vamos a agregar estaciones de transmilenio y universidades pensando 
+# en que en esta zona vive población universitaria
+######
+transmi_rolos <- opq(bbox=getbb("Bogota Colombia")) %>%
+  add_osm_feature(key="amenity", value ="bus_station")
+transmi_rolos_sf <- osmdata_sf(transmi_rolos)
+transmi_rolos_geom <- transmi_rolos_sf$osm_points
+
+#Le ponemos el sistema de coordenadas de test
+transmi_rolos_new <- st_transform(transmi_rolos_geom, crs=st_crs(test_nevera$geometry))
+st_crs(transmi_rolos_new)==st_crs(test_nevera$geometry)
+
+#Repetimos para universidades
+universidades_rolas <- opq(bbox=getbb("Bogota Colombia")) %>%
+  add_osm_feature(key="amenity", value ="university")
+uni_rolas_sf <- osmdata_sf(universidades_rolas)
+uni_rolas_geom <- uni_rolas_sf$osm_polygons
+
+#Le ponemos el sistema de coordenadas de test
+uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(test_nevera$geometry))
+st_crs(uni_rolas_new)==st_crs(test_nevera$geometry)
+
+##Creamos el mapa en OSM para Bogotá
+leaflet() %>% 
+  addTiles()%>%
+  addPolygons(data=uni_rolas_geom, col = "green") %>%
+  addPolygons(data=chapi_papi,color="yellow") %>% 
+  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
+  addCircles(data=chapineration, col = "red")
+
+####Distancia promedio a universidades de las casas
+# Primero sacamos la distancia a una universidad
+
+st_crs(uni_rolas_geom)==st_crs(test_nevera$geometry)
+uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(test_nevera$geometry))
+dist_uni <- st_distance(x=test_nevera$geometry, y=uni_rolas_new)
+dist_uni
+
+
+#ahora sacamos la distancia promedio
+prom_dist_uni <- apply(dist_uni, 1, mean)
+
+
+#Pegamos a la base
+
+
+####Distancia a una estación de transmilenio
+dist_tra <- st_distance(x=test_nevera$geometry, y=transmi_rolos_new)
+dist_tra
+
+####Distancia mínima a una estación de transmileni
+min_dist_tra <- apply(dist_tra, 1, min)
+min_dist_tra 
+
+
+#################
+#Agregamos las distancias a la base
+test_nevera <- test_nevera %>%
+  mutate(Transmi = min_dist_tra)
+
+test_nevera <- test_nevera %>%
+  mutate(Universidad = prom_dist_uni)
+
+##El poblado en medellín es una zona rosa turística, por esta razón buscaremos cercanía a restaurantes
+# y parques
+restaurantes_paisas <- opq(bbox=getbb("Comuna 14 - El Poblado")) %>%
+  add_osm_feature(key="amenity", value ="restaurant")
+restaurantes_paisas_sf <- osmdata_sf(restaurantes_paisas)
+restaurantes_paisas_geom <- restaurantes_paisas_sf$osm_points
+
+parques_paisas <- opq(bbox=getbb("Comuna 14 - El Poblado")) %>%
+  add_osm_feature(key="leisure", value ="park")
+par_paisas_sf <- osmdata_sf(parques_paisas)
+par_paisas_geom <- par_paisas_sf$osm_polygons
+
+
+##Creamos el mapa en OSM para Medellín
+leaflet() %>% 
+  addTiles()%>%
+  addPolygons(data=par_paisas_geom, col = "green") %>%
+  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
+  addCircles(data=test_medallo, col = "red")
+
+
+####Distancia promedio a un restaurante
+# Primero sacamos la distancia a un restaurante
+restaurantes_paisas_geom <- st_transform(restaurantes_paisas_geom, crs=st_crs(test_medallo$geometry))
+st_crs(restaurantes_paisas_geom)==st_crs(test_medallo$geometry)
+dist_rest <- st_distance(x=test_medallo$geometry, y=restaurantes_paisas_geom)
+dist_rest
+
+#ahora sacamos la distancia promedio
+prom_dist_rest <- apply(dist_rest, 1, mean)
+prom_dist_rest
 
 
 
 
+####Distancia a un parque
+par_paisas_geom <- st_transform(par_paisas_geom, crs=st_crs(test_medallo$geometry))
+st_crs(par_paisas_geom)==st_crs(test_medallo$geometry)
+dist_park <- st_distance(x=test_medallo$geometry, y=par_paisas_geom)
+dist_park
+
+####Distancia mínima a un parque
+min_dist_park <- apply(dist_park, 1, min)
+min_dist_park
+
+#Agregamos las distancias a la base
+test_medallo <- test_medallo %>%
+  mutate(Restaurante = prom_dist_rest)
+
+test_medallo <- test_medallo %>%
+  mutate(Parque = min_dist_park)
+
+
+
+##Modelos de predicción
 
 #########Fin del script
