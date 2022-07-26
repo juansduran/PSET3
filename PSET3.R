@@ -93,9 +93,7 @@ train <- train %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, 
 
 train$metros_tot <- as.numeric(train$metros_tot)
 
-# ponemos los na para eliminarlos
 
-train$metros_tot[train$metros_tot == 0] <- 1
 
 #para eliminar todas las filas que contengan na en la columna de metros
 train <- train %>% drop_na(metros_tot)
@@ -109,6 +107,12 @@ train <- train %>% mutate(mts_totales2 =ifelse(mts_tot>3000, 3000, mts_tot ))
 
 #eliminamos nuevas variables
 
+train$metros2 = NULL
+train$metros3 = NULL
+train$metros4 = NULL
+train$metros_tot = NULL
+train$mts_tot = NULL
+train$metrosl2 = NULL
 
 #contar na
 sum(is.na(train$metros_tot))
