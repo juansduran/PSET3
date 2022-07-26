@@ -2,9 +2,8 @@
 rm(list = ls())
 #usamos la libreria
 library("pacman")
+library("sdep")
 
-
-rm(list = ls())
 
 
 p_load(tidyverse,
@@ -13,7 +12,8 @@ p_load(tidyverse,
        leaflet,
        tmaptools,
        osmdata,
-       stringr)
+       stringr,
+       spdep)
 
 
 #Cargamos las bases
@@ -125,7 +125,7 @@ train$ascensor9[train$ascensor == 2] <- 1
 #eliminar columnas que ya no se necesitan 
 
 train$global = NULL
-train$conjunto1 = NULL
+train$conjunto = NULL
 train$ascensor = NULL
 train$ascensor1 = NULL
 train$ascensor2 = NULL
@@ -263,7 +263,7 @@ test$ascensor9[test$ascensor == 2] <- 1
 #eliminar columnas que ya no se necesitan 
 
 test$global = NULL
-test$conjunto1 = NULL
+test$conjunto = NULL
 test$ascensor = NULL
 test$ascensor1 = NULL
 test$ascensor2 = NULL
@@ -315,13 +315,14 @@ train_nevera_1<-st_as_sf(train_nevera_1,coords=c('longp','latp'),crs=4626)
 train_nevera$geometry <- train_nevera_1$geometry
 
 ##ponemos sistema de coordenadas para train Medellin
+
 train_medallo_1<-data.frame(place= train_medallo$property_id,
                          lat= train_medallo$lat,
                          long= train_medallo$lon
 )
 train_medallo_1<-train_medallo_1 %>% mutate(latp=lat,longp=long)
 
-train_medallo<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
+train_medallo_1<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
 
 train_medallo$geometry <- train_medallo_1$geometry
 
@@ -394,10 +395,11 @@ st_crs(uni_rolas_new)==st_crs(train_nevera$geometry)
 ##Creamos el mapa en OSM para Bogotá
 leaflet() %>% 
   addTiles()%>%
+  addCircleMarkers(data = transmi_rolos_new, col = "blue")%>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
-  addPolygons(data=chapi_papi,color="yellow") %>% 
-  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
-  addCircles(data=chapineration, col = "red")
+  addPolygons(data=chapi_papi,color="yellow")
+  
+  #addCircles(data=train_nevera, col = "red")
 
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
@@ -449,7 +451,7 @@ par_paisas_geom <- par_paisas_sf$osm_polygons
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=par_paisas_geom, col = "green") %>%
-  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
+  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue")%>%
   addCircles(data=train_medallo, col = "red")
 
 
@@ -649,8 +651,8 @@ par_paisas_geom <- par_paisas_sf$osm_polygons
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=par_paisas_geom, col = "green") %>%
-  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
-  addCircles(data=test_medallo, col = "red")
+  addCircles(data = restaurantes_paisas_geom, col = "blue") %>%
+  addPolygons(data=PH_Poblado, col = "red") 
 
 
 ####Distancia promedio a un restaurante
@@ -691,10 +693,17 @@ test_medallo <- test_medallo %>%
 
 #1 Regresion sin tener en cuenta correlación espacial
 
-reg_1 <-lm()
+reg_1_nevera <-lm(price~bedrooms+bathrooms+surface_total+ascensor9+garaje12+amoblado8+Transmi+Universidad, data=train_nevera)
+
+reg_1_nevera <-lm(price~bedrooms+bathrooms+surface_total+ascensor9+garaje12+amoblado8+Transmi+Universidad, data=train_nevera)
 
 #2 regresion considerando correlación espacial
-<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
-summary(sar.chi)
+#Creamos la amtriz de pesos
+
+
+queen<-poly2nb(train_nevera, queen=T)
+Mat_queen<-nb21listw(queen, style="W", zero.policy=T)
+reg_2_nevera<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
+#summary(sar.chi)
 
 #########Fin del script
