@@ -157,11 +157,18 @@ train$banos3 = NULL
 
 #contamos para ver con cuantos nas contamos
 
-sum(is.na(train$description))
+sum(is.na(test$rooms))
 
 # eliminamos los na
 
 train <- train[!is.na(train$description),]
+
+#se eliminan los rooms de na
+
+train$bedrooms[train$bedrooms == 0] <- 1
+
+train <- train %>% mutate(rooms_tot = ifelse(is.na(rooms)==T, bedrooms+1, rooms))
+
 
 #creamos nuevas variables del texto
 
@@ -370,6 +377,13 @@ table(test$tot_banos)
 
 test$banos2 = NULL
 test$banos3 = NULL
+
+
+#se eliminan los rooms de na
+
+test$bedrooms[test$bedrooms == 0] <- 1
+
+test <- test %>% mutate(rooms_tot = ifelse(is.na(rooms)==T, bedrooms+1, rooms))
 
 ########################################
 
@@ -673,14 +687,6 @@ train_medallo <- train_medallo %>%
   mutate(Parque = min_dist_park)
 
 
-
-
-
-
-
-
-
-
 ############################################
 
 #### Repetimos para la base test
@@ -879,7 +885,7 @@ test_medallo <- test_medallo %>%
 
 #1 Regresion sin tener en cuenta correlación espacial
 
-reg_1 <-lm()
+reg_1 <-lm( property_type + tot_banos + mts_totales2 + rooms + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 )
 
 #2 regresion considerando correlación espacial
 <-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
