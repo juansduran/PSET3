@@ -496,10 +496,10 @@ test$amoblado7 = NULL
 
 #partimos la base para Bogota y Medellin
 
-train_medallo <- subset(train, train$l3=="Medell√≠n")
-train_nevera <- subset(train, train$l3=="Bogot√° D.C")
-test_medallo <- subset(test, test$l3=="Medell√≠n")
-test_nevera <- subset(test, test$l3=="Bogot√° D.C")
+train_medallo <- subset(train, train$l3=="MedellÌn")
+train_nevera <- subset(train, train$l3=="Bogot· D.C")
+test_medallo <- subset(test, test$l3=="MedellÌn")
+test_nevera <- subset(test, test$l3=="Bogot· D.C")
 
 
 
@@ -560,7 +560,9 @@ chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota",
 st_crs(chapi_papi)==st_crs(train_nevera$geometry)
 chapi_papi <- st_transform(chapi_papi, crs=st_crs(train_nevera$geometry))
 st_crs(chapi_papi)==st_crs(train_nevera$geometry)
-# Observaciones en chapinero
+
+  # Observaciones en chapinero
+
 chapineration <- train_nevera[chapi_papi,]
 
 
@@ -692,8 +694,8 @@ train_medallo <- train_medallo %>%
 #### Repetimos para la base test
 
 ############################################
-test_medallo <- subset(test, test$l3=="Medell√≠n")
-test_nevera <- subset(test, test$l3=="Bogot√° D.C")
+test_medallo <- subset(test, test$l3=="MedellÌn")
+test_nevera <- subset(test, test$l3=="Bogot· D.C")
 
 
 ##Preparamos la base de test
@@ -880,12 +882,34 @@ test_medallo <- test_medallo %>%
 
 
 
+
+
+
+#################################################################
+
+#estadÌsticas descriptivas
+
+install.packages("gtsummary")
+install.packages("haven")
+
+library(gtsummary)
+library(haven)
+library(tidyr)
+
+train %>%
+  select(train$rooms_tot, train$bedrooms) %>%
+  tbl_summary(by=train$property_type) %>%
+  add_overall() %>%
+  add_n()
+
+
+
 ##Modelos de predicci√≥n. Se correr√°n para Medellin y Bogota para
 #encontrar el mejor modelo para cada ciudad
 
 #1 Regresion sin tener en cuenta correlaci√≥n espacial
 
-reg_1 <-lm( property_type + tot_banos + mts_totales2 + rooms + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 )
+reg_1 <-lm( property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 )
 
 #2 regresion considerando correlaci√≥n espacial
 <-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
