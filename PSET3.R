@@ -2,8 +2,9 @@
 rm(list = ls())
 #usamos la libreria
 library("pacman")
-library("sdep")
 
+
+rm(list = ls())
 
 
 p_load(tidyverse,
@@ -13,7 +14,7 @@ p_load(tidyverse,
        tmaptools,
        osmdata,
        stringr,
-       spdep)
+       tidyr)
 
 
 #Cargamos las bases
@@ -44,16 +45,130 @@ train$description <- str_replace_all(train$description, "[^[:alnum:]]", " ")
 
 train$description <- gsub("\\s+", " ", str_trim(train$description))
 
-typos <- aregexec("garajes", train$description)
-regmatches(train$description, typos)
+
+### encontrar metros y número de baños
+
+#se crean patrones
+
+x = "[:space:]+[:digit:]+m2"
+y = "[:space:]+[:digit:]+[:space:]+mt2"
+z = "[:space:]+[:digit:]+[:space:]+m2"
+aa = "[:space:]+[:digit:]+mt2"
+ab = "[:space:]+[:digit:]+[:space:]+metros"
+ac = "[:space:]+[:digit:]+metros"
+ad = "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+mt2"
+ae = "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+m2"
+af = "[:space:]+[:digit:]+[:punct:]+[:digit:]+[:space:]+metros"
+
+ah = "[:space:]+[:digit:]+[:space:]+banos"
+ai = "[:space:]+[:digit:]+[:space:]+bano"
+
+digit = "[:space:]+[:digit:]+[:space:]"
+digit2 = "[:space:]+[:digit:]"
+digit3 = "[:space:]+[:digit:]+m2"
+digit4 = "[:space:]+[:digit:]+mts"
+digit5 = "[:space:]+[:digit:]+[:digit:]+[:digit:]+[:digit:]"
+mdos = "m2"
+metrostr = "mt2"
+metr= "metros"
+
+
+#metros cuadrados
+
+#se extraen de acuerdo a los patrones y se crea nueva variable
+train <- train %>% mutate(metros2 = str_extract(string = train$description, pattern = paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af)))
+
+#nos quedamos solo con los valores numéricos
+train <- train %>% mutate(metros3 = str_extract(string = train$metros2, pattern = paste0(digit,"|", digit2,"|", digit3,"|", digit4,"|", digit5)))
+
+#remplazamos todos las palabras que tengan el número y la palabra pegada
+
+train<- train %>% mutate(metros4 = str_replace_all(string = train$metros2, pattern = paste0(mdos, "|", metrostr, "|", metr), replacement = ""))
+
+#lo convertimos a un valor númérico
+train$metros3 <- as.numeric(train$metros3)
+
+#nos quedamos con la información
+train <- train %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, metros4))
+
+train$metros_tot <- as.numeric(train$metros_tot)
+
+
+#para eliminar todas las filas que contengan na en la columna de metros
+train <- train %>% drop_na(metros_tot)
+
+#arreglamos otros datos inconsistentes
+
+train <- train %>% mutate(mts_tot =ifelse(metros_tot<25, 25, metros_tot ))
+
+
+train <- train %>% mutate(mts_totales2 =ifelse(mts_tot>3000, 3000, mts_tot ))
+
+#eliminamos nuevas variables
+
+train$metros2 = NULL
+train$metros3 = NULL
+train$metros4 = NULL
+train$metros_tot = NULL
+train$mts_tot = NULL
+train$metrosl2 = NULL
+
+#contar na
+sum(is.na(train$metros_tot))
+
+
+# sacamos más baños para otros del description
+
+train <- train %>% mutate(banos2 = str_extract(string = train$description, pattern = paste0(ah,"|",ai))) 
+
+train <- train %>% mutate(banos3 = str_extract(string = train$banos2, pattern = digit))
+
+#se convierte en numérico puesto que se saca de texto
+train$banos3 <- as.numeric(train$banos3)
+#baños totales
+
+#convertir na a 0
+
+train$bathrooms[is.na(train$bathrooms)] <- 0
+train$banos3[is.na(train$banos3)] <- 0
+
+train <- train %>% mutate(tot_banos= bathrooms+banos3)
+
+train$tot_banos[train$tot_banos == 0] <- 1
+train$tot_banos[train$tot_banos == 20] <- 1
+train$tot_banos[train$tot_banos == 22] <- 1
+train$tot_banos[train$tot_banos == 25] <- 1
+train$tot_banos[train$tot_banos == 26] <- 1
+train$tot_banos[train$tot_banos == 36] <- 1
+train$tot_banos[train$tot_banos == 47] <- 1
+train$tot_banos[train$tot_banos == 60] <- 1
+train$tot_banos[train$tot_banos == 100] <- 1
+train$tot_banos[train$tot_banos == 2010] <- 1
+train$tot_banos[train$tot_banos == 2016] <- 1
+
+table(train$metros_tot)                                                                
+
+                                                                 #paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af),0)))
+
+#elimino las variabkes de baños que no uso
+
+train$banos2 = NULL
+train$banos3 = NULL
 
 #contamos para ver con cuantos nas contamos
 
-sum(is.na(train$description))
+sum(is.na(test$rooms))
 
 # eliminamos los na
 
 train <- train[!is.na(train$description),]
+
+#se eliminan los rooms de na
+
+train$bedrooms[train$bedrooms == 0] <- 1
+
+train <- train %>% mutate(rooms_tot = ifelse(is.na(rooms)==T, bedrooms+1, rooms))
+
 
 #creamos nuevas variables del texto
 
@@ -107,7 +222,7 @@ train <- train %>% mutate(amoblado8 = amoblado4 + amoblado5 + amoblado6 + amobla
 
 table(train$amoblado8)
 table(train$garaje12)
-table(train$conjunto)
+table(train$conjunto1)
 table(train$ascensor9)
 
 #cambiar la codificaciÃ³n para que queden en 1 y 0
@@ -124,7 +239,7 @@ train$ascensor9[train$ascensor == 2] <- 1
 
 #eliminar columnas que ya no se necesitan 
 
-train$global = NULL
+
 train$conjunto = NULL
 train$ascensor = NULL
 train$ascensor1 = NULL
@@ -155,7 +270,15 @@ train$amoblado6 = NULL
 train$amoblado7 = NULL
 
 
-####################
+#interacciones
+
+train <- train %>% mutate(metros_4 = mts_totales2^2)
+
+train <- train %>% mutate(apartamento = ifelse(property_type =="Apartamento", 1, 0))
+
+train <- train %>% mutate(apartamento_ascensor = apartamento*ascensor9)
+
+
 
 
 ######################################################
@@ -185,6 +308,93 @@ test$description <- gsub("\\s+", " ", str_trim(test$description))
 
 typos <- aregexec("garajes", test$description)
 regmatches(test$description, typos)
+
+#################
+
+
+#metros cuadrados
+
+#se extraen de acuerdo a los patrones y se crea nueva variable
+test <- test %>% mutate(metros2 = str_extract(string = test$description, pattern = paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af)))
+
+#nos quedamos solo con los valores numéricos
+test <- test %>% mutate(metros3 = str_extract(string = test$metros2, pattern = paste0(digit,"|", digit2,"|", digit3,"|", digit4,"|", digit5)))
+
+#remplazamos todos las palabras que tengan el número y la palabra pegada
+
+test<- test %>% mutate(metros4 = str_replace_all(string = test$metros2, pattern = paste0(mdos, "|", metrostr, "|", metr), replacement = ""))
+
+#lo convertimos a un valor númérico
+test$metros3 <- as.numeric(test$metros3)
+
+#nos quedamos con la información
+test <- test %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, metros4))
+
+test$metros_tot <- as.numeric(test$metros_tot)
+
+
+
+#para eliminar todas las filas que contengan na en la columna de metros
+test <- test %>% drop_na(metros_tot)
+
+#arreglamos otros datos inconsistentes
+
+test <- test %>% mutate(mts_tot =ifelse(metros_tot<25, 25, metros_tot ))
+
+
+test <- test %>% mutate(mts_totales2 =ifelse(mts_tot>3000, 3000, mts_tot ))
+
+#eliminamos nuevas variables
+
+test$metros2 = NULL
+test$metros3 = NULL
+test$metros4 = NULL
+test$metros_tot = NULL
+test$mts_tot = NULL
+
+
+#contar na
+sum(is.na(test$metros_tot))
+
+
+# sacamos más baños para otros del description
+
+test <- test %>% mutate(banos2 = str_extract(string = test$description, pattern = paste0(ah,"|",ai))) 
+
+test <- test %>% mutate(banos3 = str_extract(string = test$banos2, pattern = digit))
+
+#se convierte en numérico puesto que se saca de texto
+test$banos3 <- as.numeric(test$banos3)
+#baños totales
+
+#convertir na a 0
+
+test$bathrooms[is.na(test$bathrooms)] <- 0
+test$banos3[is.na(test$banos3)] <- 0
+
+test <- test %>% mutate(tot_banos= bathrooms+banos3)
+
+
+
+test$tot_banos[test$tot_banos == 0] <- 1
+
+table(test$tot_banos)                                                                
+
+
+#elimino las variabkes de baños que no uso
+
+test$banos2 = NULL
+test$banos3 = NULL
+
+
+#se eliminan los rooms de na
+
+test$bedrooms[test$bedrooms == 0] <- 1
+
+test <- test %>% mutate(rooms_tot = ifelse(is.na(rooms)==T, bedrooms+1, rooms))
+
+########################################
+
 
 #contamos para ver con cuantos nas contamos
 
@@ -262,7 +472,7 @@ test$ascensor9[test$ascensor == 2] <- 1
 
 #eliminar columnas que ya no se necesitan 
 
-test$global = NULL
+
 test$conjunto = NULL
 test$ascensor = NULL
 test$ascensor1 = NULL
@@ -292,12 +502,21 @@ test$amoblado5 = NULL
 test$amoblado6 = NULL
 test$amoblado7 = NULL
 
+#interacciones
+
+test <- test %>% mutate(metros_4 = mts_totales2^2)
+
+test <- test %>% mutate(apartamento = ifelse(property_type =="Apartamento", 1, 0))
+
+test <- test %>% mutate(apartamento_ascensor = apartamento*ascensor9)
+
+
 #partimos la base para Bogota y Medellin
 
-train_medallo <- subset(train, train$l3=="MedellÃ­n")
-train_nevera <- subset(train, train$l3=="BogotÃ¡ D.C")
-test_medallo <- subset(test, test$l3=="MedellÃ­n")
-test_nevera <- subset(test, test$l3=="BogotÃ¡ D.C")
+train_medallo <- subset(train, train$l3=="Medellín")
+train_nevera <- subset(train, train$l3=="Bogotá D.C")
+test_medallo <- subset(test, test$l3=="Medellín")
+test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
 
@@ -315,14 +534,13 @@ train_nevera_1<-st_as_sf(train_nevera_1,coords=c('longp','latp'),crs=4626)
 train_nevera$geometry <- train_nevera_1$geometry
 
 ##ponemos sistema de coordenadas para train Medellin
-
 train_medallo_1<-data.frame(place= train_medallo$property_id,
                          lat= train_medallo$lat,
                          long= train_medallo$lon
 )
 train_medallo_1<-train_medallo_1 %>% mutate(latp=lat,longp=long)
 
-train_medallo_1<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
+train_medallo<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
 
 train_medallo$geometry <- train_medallo_1$geometry
 
@@ -359,7 +577,9 @@ chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota",
 st_crs(chapi_papi)==st_crs(train_nevera$geometry)
 chapi_papi <- st_transform(chapi_papi, crs=st_crs(train_nevera$geometry))
 st_crs(chapi_papi)==st_crs(train_nevera$geometry)
-# Observaciones en chapinero
+
+  # Observaciones en chapinero
+
 chapineration <- train_nevera[chapi_papi,]
 
 
@@ -395,11 +615,10 @@ st_crs(uni_rolas_new)==st_crs(train_nevera$geometry)
 ##Creamos el mapa en OSM para BogotÃ¡
 leaflet() %>% 
   addTiles()%>%
-  addCircleMarkers(data = transmi_rolos_new, col = "blue")%>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
-  addPolygons(data=chapi_papi,color="yellow")
-  
-  #addCircles(data=train_nevera, col = "red")
+  addPolygons(data=chapi_papi,color="yellow") %>% 
+  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
+  addCircles(data=chapineration, col = "red")
 
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
@@ -451,7 +670,7 @@ par_paisas_geom <- par_paisas_sf$osm_polygons
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=par_paisas_geom, col = "green") %>%
-  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue")%>%
+  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
   addCircles(data=train_medallo, col = "red")
 
 
@@ -487,21 +706,13 @@ train_medallo <- train_medallo %>%
   mutate(Parque = min_dist_park)
 
 
-
-
-
-
-
-
-
-
 ############################################
 
 #### Repetimos para la base test
 
 ############################################
-test_medallo <- subset(test, test$l3=="MedellÃ­n")
-test_nevera <- subset(test, test$l3=="BogotÃ¡ D.C")
+test_medallo <- subset(test, test$l3=="Medellín")
+test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
 ##Preparamos la base de test
@@ -651,8 +862,8 @@ par_paisas_geom <- par_paisas_sf$osm_polygons
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=par_paisas_geom, col = "green") %>%
-  addCircles(data = restaurantes_paisas_geom, col = "blue") %>%
-  addPolygons(data=PH_Poblado, col = "red") 
+  addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
+  addCircles(data=test_medallo, col = "red")
 
 
 ####Distancia promedio a un restaurante
@@ -688,22 +899,37 @@ test_medallo <- test_medallo %>%
 
 
 
+
+
+
+#################################################################
+
+#estadísticas descriptivas
+
+install.packages("gtsummary")
+install.packages("haven")
+
+library(gtsummary)
+library(haven)
+library(tidyr)
+
+train %>%
+  select(train$rooms_tot, train$bedrooms) %>%
+  tbl_summary(by=train$property_type) %>%
+  add_overall() %>%
+  add_n()
+
+
+
 ##Modelos de predicciÃ³n. Se correrÃ¡n para Medellin y Bogota para
 #encontrar el mejor modelo para cada ciudad
 
 #1 Regresion sin tener en cuenta correlaciÃ³n espacial
 
-reg_1_nevera <-lm(price~bedrooms+bathrooms+surface_total+ascensor9+garaje12+amoblado8+Transmi+Universidad, data=train_nevera)
-
-reg_1_nevera <-lm(price~bedrooms+bathrooms+surface_total+ascensor9+garaje12+amoblado8+Transmi+Universidad, data=train_nevera)
+reg_1 <-lm( property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 )
 
 #2 regresion considerando correlaciÃ³n espacial
-#Creamos la amtriz de pesos
-
-
-queen<-poly2nb(train_nevera, queen=T)
-Mat_queen<-nb21listw(queen, style="W", zero.policy=T)
-reg_2_nevera<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
-#summary(sar.chi)
+<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
+summary(sar.chi)
 
 #########Fin del script
