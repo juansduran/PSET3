@@ -222,7 +222,7 @@ train <- train %>% mutate(amoblado8 = amoblado4 + amoblado5 + amoblado6 + amobla
 
 table(train$amoblado8)
 table(train$garaje12)
-table(train$conjunto)
+table(train$conjunto1)
 table(train$ascensor9)
 
 #cambiar la codificación para que queden en 1 y 0
@@ -270,7 +270,15 @@ train$amoblado6 = NULL
 train$amoblado7 = NULL
 
 
-####################
+#interacciones
+
+train <- train %>% mutate(metros_4 = mts_totales2^2)
+
+train <- train %>% mutate(apartamento = ifelse(property_type =="Apartamento", 1, 0))
+
+train <- train %>% mutate(apartamento_ascensor = apartamento*ascensor9)
+
+
 
 
 ######################################################
@@ -493,6 +501,15 @@ test$amoblado4 = NULL
 test$amoblado5 = NULL
 test$amoblado6 = NULL
 test$amoblado7 = NULL
+
+#interacciones
+
+test <- test %>% mutate(metros_4 = mts_totales2^2)
+
+test <- test %>% mutate(apartamento = ifelse(property_type =="Apartamento", 1, 0))
+
+test <- test %>% mutate(apartamento_ascensor = apartamento*ascensor9)
+
 
 #partimos la base para Bogota y Medellin
 
