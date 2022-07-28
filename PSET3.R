@@ -2,9 +2,6 @@
 rm(list = ls())
 #usamos la libreria
 library("pacman")
-
-
-
 p_load(tidyverse,
        sf,
        rio,
@@ -565,13 +562,15 @@ st_crs(PH_Poblado)==st_crs(train_medallo$geometry)
 PH_Poblado <- st_transform(PH_Poblado, crs=4626)
 st_crs(PH_Poblado)==st_crs(train_medallo$geometry)
 
+train_medallo_sf <- st_as_sf(train_medallo)
+
 # Observaciones en el poblado 
-#Pobladation <- train_medallo[PH_Poblado,]
+Pobladation <- train_medallo_sf[PH_Poblado,]
 
 leaflet() %>%
   addTiles() %>%
-  addPolygons(data=PH_Poblado, col = "red")
-  #addCircles(data=Pobladation)
+  addPolygons(data=PH_Poblado, col = "red") %>%
+  addCircles(data=Pobladation)
 
 
 ######Definimos el área de chapinero
@@ -585,14 +584,15 @@ chapi_papi <- st_transform(chapi_papi, crs=st_crs(train_nevera$geometry))
 st_crs(chapi_papi)==st_crs(train_nevera$geometry)
 
   # Observaciones en chapinero
-
-#chapineration <- train_nevera[chapi_papi,]
+train_nevera_sf <- st_as_sf(train_nevera)
+chapineration <- train_nevera_sf[chapi_papi,]
 
 
 leaflet() %>%
   addTiles() %>% 
-  addPolygons(data=chapi_papi,color="red")  
-  #addCircles(data=chapineration)
+  addCircles(data=chapineration)%>%
+addPolygons(data=chapi_papi,color="red") 
+
 
 ####Variables adicionales de OSM##########
 
@@ -622,8 +622,7 @@ st_crs(uni_rolas_new)==st_crs(train_nevera$geometry)
 
 leaflet() %>% 
   addTiles()%>%
-  addPolygons(data=uni_rolas_geom, col = "green") %>%
-  addPolygons(data=chapi_papi,color="yellow") %>% 
+  addPolygons(data=chapi_papi,color="red") %>% 
   addCircleMarkers(data = transmi_rolos_new, col = "blue")
 
 ####Distancia promedio a universidades de las casas
@@ -675,9 +674,10 @@ par_paisas_geom <- par_paisas_sf$osm_polygons
 ##Creamos el mapa en OSM para Medellín
 leaflet() %>% 
   addTiles()%>%
+  addPolygons(data=PH_Poblado, col = "yellow") %>%
   addPolygons(data=par_paisas_geom, col = "green") %>%
   addCircleMarkers(data = restaurantes_paisas_geom, col = "blue") %>%
-  addCircles(data=train_medallo, col = "red")
+  
 
 
 ####Distancia promedio a un restaurante
@@ -923,7 +923,7 @@ st(train_nevera2, col.breaks = 20,
 
 
 
-summary(table_one, title = "Datos de Bogot�")
+summary(table_one, title = "Datos de Bogot?")
 
 library(gtsummary)
 library(haven)
@@ -941,6 +941,7 @@ train %>%
 #encontrar el mejor modelo para cada ciudad
 
 #Usamos paquede caret para entrenar el modelo
+library("caret")
 
 FiveStats <- function(...) c(twoClassSummary(...), defaultSummary(...))
 ctrl <- trainControl(method = "cv",
@@ -953,18 +954,18 @@ ctrl <- trainControl(method = "cv",
 library("sf")
 library("spdep")
 library("dplyr")
-train_nevera_sf <- st_as_sf(train_nevera)
-man_ro <- st_transform(man_ro, crs=4626)
-train_nevera_sf <- st_transform(man_ro, crs=4626)
 
+#Bogota
+train_nevera_sf <- st_as_sf(train_nevera)
+train_nevera_sf <- st_transform(train_nevera_sf, crs=4626)
+man_ro <- st_transform(man_ro, crs=4626)
 train_nevera_mnz <- st_join(x=train_nevera_sf,y=man_ro)
 
+Reina_B<-poly2nb(train_nevera_mnz, queen=TRUE)
+W_R_B<-nb2listw(Reina_B, style="W", zero.policy=TRUE)
 
-Reina<-poly2nb(train_nevera_mnz, queen=TRUE)
-W<-nb2listw(Reina, style="W", zero.policy=TRUE)
-W
-
-###Bogota
+Torre_B<-poly2nb(train_nevera_mnz, queen=False)
+W_T_B<-nb2listw(Torre_B, style="W", zero.policy=TRUE)
 
 #1 Regresion con todos los predictores con pre procesamiento
 
@@ -981,19 +982,84 @@ Reg_1_bog
 
 set.seed(1712)
 Reg_2_bog <- train(
-  price~  property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms  +amoblado8 + Universidad + Transmi, data=train_nevera,
+  price~  metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8, data=train_nevera,
   method = "lm",
   preProcess = c("center", "scale")
 )
 Reg_2_bog
 
-#REgresion con correlacion espacial
+#3 Regresion con correlacion espacial Reina
+reg_3_bog<-lagsarlm(price~ property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms  +amoblado8 + Universidad + Transmi, data=train_nevera_mnz, W_R_B)
+
+#4 Regresion con correlacion espacial Torre
+reg_3_bog<-lagsarlm(price~ property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms  +amoblado8 + Universidad + Transmi, data=train_nevera_mnz, W_T_B)
 
 
 
-#2 regresion considerando correlación espacial
-#<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
-summary(sar.chi)
+
+###Medellin
+
+train_medallo_sf <- st_as_sf(train_medallo)
+train_medallo_sf <- st_transform(train_medallo_sf, crs=4626)
+man_pa <- st_transform(man_pa, crs=4626)
+train_medallo_mnz <- st_join(x=train_medallo_sf,y=man_pa)
+
+Reina_pa<-poly2nb(train_medallo_mnz, queen=TRUE)
+W_R_M<-nb2listw(Reina_pa, style="W", zero.policy=TRUE)
+
+Torre_pa<-poly2nb(train_medallo_mnz, queen=False)
+W_T_M<-nb2listw(Torre_pa, style="W", zero.policy=TRUE)
+
+#1 Regresion con todos los predictores con pre procesamiento
+
+set.seed(1712)
+Reg_1_med <- train(
+  price~ metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 + Parque + Restaurante, data=train_medallo,
+  method = "lm",
+  preProcess = c("center", "scale")  
+)
+Reg_1_med
+
+
+#2 Regresion con sin interacciones los parametros con pre procesamiento
+
+set.seed(1712)
+Reg_2_med <- train(
+  price~  metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8, data=train_medallo,
+  method = "lm",
+  preProcess = c("center", "scale")
+)
+Reg_2_med
+
+#3 Regresion con correlacion espacial Reina
+reg_3_bog<-lagsarlm(price~ property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms  +amoblado8 + Parque + Restaurante, data=train_paisa_mnz, W_R_B)
+
+#4 Regresion con correlacion espacial Torre
+reg_3_bog<-lagsarlm(price~ property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms  +amoblado8 + Parque + Restaurante, data=train_paisa_mnz, W_T_B)
+
+
+
+
+#########
+#Corremos la regresión en la base test
+
+#Tabla
+install.packages("huxtable")
+library(huxtable)
+
+tablila <- huxreg(Reg_1_bog)
+
+summary(Reg_1_bog)
+
+summary(Reg_1_med)
+
+
+#Extraemos csv
+
+
 
 #########Fin del script
+
+
+
 
