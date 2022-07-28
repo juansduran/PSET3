@@ -906,8 +906,46 @@ test_medallo <- test_medallo %>%
 
 #estadísticas descriptivas
 
-install.packages("gtsummary")
-install.packages("haven")
+
+install.packages("arsenal")
+library("arsenal")
+install.packages("vtable")
+library(vtable)
+
+train_nevera2 <- train_nevera
+
+train_nevera2$geometry = NULL
+train_nevera2$lat = NULL
+train_nevera2$lon = NULL
+train_nevera2$l1 = NULL
+train_nevera2$l2 = NULL
+train_nevera2$l3 = NULL
+train_nevera2$start_date = NULL
+train_nevera2$end_date = NULL
+train_nevera2$currency = NULL
+train_nevera2$title = NULL
+train_nevera2$description = NULL
+train_nevera2$operation_type = NULL
+
+
+#Getting complex
+st(train_nevera2, col.breaks = 20,
+   summ = list(
+     c('notNA(x)','mean(x)','sd(x^2)','min(x)','max(x)'),
+     c('notNA(x)','mean(x)')
+   ),
+   summ.names = list(
+     c('N','Mean','SD of X^2','Min','Max'),
+     c('Count','Percent')
+   ))
+
+
+
+
+
+
+
+summary(table_one, title = "Datos de Bogotá")
 
 library(gtsummary)
 library(haven)
