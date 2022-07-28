@@ -705,79 +705,55 @@ train_medallo <- train_medallo %>%
   mutate(Parque = min_dist_park)
 
 
-############################################
+#################################################################
+#Repetimos para test
+###Preparamos la base de test
+##ponemos sistema de coordenadas para test Bogota
 
-#### Repetimos para la base test
-
-############################################
-test_medallo <- subset(test, test$l3=="Medellín")
-test_nevera <- subset(test, test$l3=="Bogotá D.C")
-
-
-##Preparamos la base de test
-##ponemos sistema de coordenadas para test Bogota y Medellin
 test_nevera_1<-data.frame(place= test_nevera$property_id,
-                        lat= test_nevera$lat,
-                        long= test_nevera$lon
+                          lat= test_nevera$lat,
+                          long= test_nevera$lon
 )
 test_nevera_1<-test_nevera_1 %>% mutate(latp=lat,longp=long)
 
-test_nevera_1<-st_as_sf(test_nevera_1,coords=c('longp','latp'),crs=4626)
+test_nevera_2<-st_as_sf(test_nevera_1,coords=c('longp','latp'),crs=4626)
 
-test_nevera$geometry <- test_nevera_1$geometry
-##ponemos sistema de coordenadas para test Bogota y Medellin
+test_nevera$geometry <- test_nevera_2$geometry
+
+##ponemos sistema de coordenadas para test Medellin
 test_medallo_1<-data.frame(place= test_medallo$property_id,
-                         lat= test_medallo$lat,
-                         long= test_medallo$lon
+                           lat= test_medallo$lat,
+                           long= test_medallo$lon
 )
 test_medallo_1<-test_medallo_1 %>% mutate(latp=lat,longp=long)
 
-test_medallo_1<-st_as_sf(test_medallo_1,coords=c('longp','latp'),crs=4626)
+test_medallo_2<-st_as_sf(test_medallo_1,coords=c('longp','latp'),crs=4626)
 
-test_medallo$geometry <- test_medallo_1$geometry 
+test_medallo$geometry <- test_medallo_2$geometry
 
-rm(test_nevera_1)
-rm(test_medallo_1)
+
+rm(test_medallo_1, test_medallo_2, test_nevera_1, test_nevera_2)
 
 #####
 ##Sacamos información de el Poblado
 
-#Definimos sólo el área del poblado
-PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado", 
-                    featuretype = "boundary:administrative", 
-                    format_out = "sf_polygon") 
-#Dejamos con el mismo sistema de coordenadas
-
-st_crs(PH_Poblado)==st_crs(test_medallo$geometry)
-PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(test_medallo$geometry))
-st_crs(PH_Poblado)==st_crs(test_medallo$geometry)
-
-# Observaciones en el poblado 
-Pobladation <- test_medallo[PH_Poblado,]
 
 leaflet() %>%
   addTiles() %>%
   addPolygons(data=PH_Poblado, col = "red") %>%
-  addCircles(data=Pobladation)
+  addCircles(data=test_medallo)
+#addCircles(data=Pobladation)
 
-
-######Definimos el área de chapinero
-chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota", 
-                    featuretype = "boundary:administrative", 
-                    format_out = "sf_polygon") %>% .$multipolygon
-#Dejamos con el mismo sistema de coordenadas
-
-st_crs(chapi_papi)==st_crs(test_nevera$geometry)
-chapi_papi <- st_transform(chapi_papi, crs=st_crs(test_nevera$geometry))
-st_crs(chapi_papi)==st_crs(test_nevera$geometry)
 # Observaciones en chapinero
-chapineration <- test_nevera[chapi_papi,]
+
+#chapineration <- test_nevera[chapi_papi,]
 
 
 leaflet() %>%
   addTiles() %>% 
-  addPolygons(data=chapi_papi,color="red") %>% 
-  addCircles(data=chapineration)
+  addPolygons(data=chapi_papi,color="red") %>%
+  addCircles(data=test_nevera)
+
 
 ####Variables adicionales de OSM##########
 
@@ -804,12 +780,12 @@ uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(test_nevera$geometry))
 st_crs(uni_rolas_new)==st_crs(test_nevera$geometry)
 
 ##Creamos el mapa en OSM para Bogotá
+
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
   addPolygons(data=chapi_papi,color="yellow") %>% 
-  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
-  addCircles(data=chapineration, col = "red")
+  addCircleMarkers(data = transmi_rolos_new, col = "blue")
 
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
@@ -897,10 +873,6 @@ test_medallo <- test_medallo %>%
   mutate(Parque = min_dist_park)
 
 
-
-
-
-
 #################################################################
 
 #estad?sticas descriptivas
@@ -936,7 +908,7 @@ ctrl <- trainControl(method = "cv",
 reg_1 <-lm(price~ metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 + Universidad + Transmi, data=train_nevera)
 reg_1
 #2 regresion considerando correlación espacial
-<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
+#<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
 summary(sar.chi)
 
 #########Fin del script
