@@ -12,7 +12,10 @@ p_load(tidyverse,
        tmaptools,
        osmdata,
        stringr,
-       tidyr)
+       tidyr,
+       caret,
+       rgdal
+       )
 
 
 #Cargamos las bases
@@ -20,8 +23,12 @@ train <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/
 
 test <- readRDS("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/dataPS3/test.Rds")
 
+setwd("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/MGN2017_05_ANTIOQUIA/05_ANTIOQUIA/URBANO")
 
+man_pa <- st_read("MGN_URB_MANZANA.shp")
 
+setwd("C:/Users/pcere/Dropbox/Machine Learning/PSET3/dataPS3/MGN2017_11_BOGOTA/11_BOGOTA/URBANO")
+man_ro <- st_read("MGN_URB_MANZANA.shp")
 #############################3333
 #Agregamos variables con análisis de textos
 
@@ -516,7 +523,7 @@ train_nevera <- subset(train, train$l3=="Bogotá D.C")
 test_medallo <- subset(test, test$l3=="Medellín")
 test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
-rm(train_medallo)
+
 
 ###Preparamos la base de train
 ##ponemos sistema de coordenadas para train Bogota
@@ -544,7 +551,7 @@ train_medallo$geometry <- train_medallo_2$geometry
 
 
 rm(train_medallo_1, train_medallo_2, train_nevera_1, train_nevera_2)
-rm(train_nevera_1)
+
 #####
 ##Sacamos información de el Poblado
 
@@ -875,7 +882,7 @@ test_medallo <- test_medallo %>%
 
 #################################################################
 
-#estad?sticas descriptivas
+#estadisticas descriptivas
 
 install.packages("gtsummary")
 install.packages("haven")
@@ -896,17 +903,56 @@ train %>%
 #encontrar el mejor modelo para cada ciudad
 
 #Usamos paquede caret para entrenar el modelo
+
+FiveStats <- function(...) c(twoClassSummary(...), defaultSummary(...))
 ctrl <- trainControl(method = "cv",
                      number = 10,
                      savePredictions = TRUE,
                      summaryFunction = FiveStats)
 
+#Creamos matriz ponderada
+
+library("sf")
+library("spdep")
+library("dplyr")
+train_nevera_sf <- st_as_sf(train_nevera)
+man_ro <- st_transform(man_ro, crs=4626)
+train_nevera_sf <- st_transform(man_ro, crs=4626)
+
+train_nevera_mnz <- st_join(x=train_nevera_sf,y=man_ro)
+
+
+Reina<-poly2nb(train_nevera_mnz, queen=TRUE)
+W<-nb2listw(Reina, style="W", zero.policy=TRUE)
+W
 
 ###Bogota
-#1 Regresion sin tener en cuenta correlación espacial
 
-reg_1 <-lm(price~ metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 + Universidad + Transmi, data=train_nevera)
-reg_1
+#1 Regresion con todos los predictores con pre procesamiento
+
+set.seed(1712)
+Reg_1_bog <- train(
+  price~ metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 + Universidad + Transmi, data=train_nevera,
+  method = "lm",
+  preProcess = c("center", "scale")  
+)
+Reg_1_bog
+
+
+#2 Regresion con sin interacciones los parametros con pre procesamiento
+
+set.seed(1712)
+Reg_2_bog <- train(
+  price~  property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms  +amoblado8 + Universidad + Transmi, data=train_nevera,
+  method = "lm",
+  preProcess = c("center", "scale")
+)
+Reg_2_bog
+
+#REgresion con correlacion espacial
+
+
+
 #2 regresion considerando correlación espacial
 #<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
 summary(sar.chi)
