@@ -1,6 +1,7 @@
 #PSET3#
 rm(list = ls())
 #usamos la libreria
+
 library("pacman")
 
 
@@ -518,10 +519,10 @@ rm(test_nevera)
 
 #partimos la base para Bogota y Medellin
 
-train_medallo <- subset(train, train$l3=="MedellÃ­n")
-train_nevera <- subset(train, train$l3=="BogotÃ¡ D.C")
-test_medallo <- subset(test, test$l3=="MedellÃ­n")
-test_nevera <- subset(test, test$l3=="BogotÃ¡ D.C")
+train_medallo <- subset(train, train$l3=="Medellín")
+train_nevera <- subset(train, train$l3=="Bogotá D.C")
+test_medallo <- subset(test, test$l3=="Medellín")
+test_nevera <- subset(test, test$l3=="Bogotá D.C")
 
 
 
@@ -939,7 +940,7 @@ st(train_nevera2, col.breaks = 20,
 
 
 #Getting complex
-st(train_medallo2, col.breaks = 15,
+st(train_medallo2, col.breaks = 20,
    summ = list(
      c('notNA(x)','mean(x)','sd(x^2)','min(x)','max(x)'),
      c('notNA(x)','mean(x)')
@@ -949,19 +950,6 @@ st(train_medallo2, col.breaks = 15,
      c('Count','Percent')
    ))
 
-
-
-summary(table_one, title = "Datos de Bogotá")
-
-library(gtsummary)
-library(haven)
-library(tidyr)
-
-train %>%
-  select(train$rooms_tot, train$bedrooms) %>%
-  tbl_summary(by=train$property_type) %>%
-  add_overall() %>%
-  add_n()
 
 
 
