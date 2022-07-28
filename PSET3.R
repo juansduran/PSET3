@@ -884,6 +884,9 @@ install.packages("vtable")
 library(vtable)
 
 train_nevera2 <- train_nevera
+train_medallo2 <- train_medallo
+
+#nevera
 
 train_nevera2$geometry = NULL
 train_nevera2$lat = NULL
@@ -899,6 +902,23 @@ train_nevera2$description = NULL
 train_nevera2$operation_type = NULL
 
 
+#medallo
+
+train_medallo2$geometry = NULL
+train_medallo2$lat = NULL
+train_medallo2$lon = NULL
+train_medallo2$l1 = NULL
+train_medallo2$l2 = NULL
+train_medallo2$l3 = NULL
+train_medallo2$start_date = NULL
+train_medallo2$end_date = NULL
+train_medallo2$currency = NULL
+train_medallo2$title = NULL
+train_medallo2$description = NULL
+train_medallo2$operation_type = NULL
+
+
+
 #Getting complex
 st(train_nevera2, col.breaks = 20,
    summ = list(
@@ -911,8 +931,16 @@ st(train_nevera2, col.breaks = 20,
    ))
 
 
-
-
+#Getting complex
+st(train_medallo2, col.breaks = 15,
+   summ = list(
+     c('notNA(x)','mean(x)','sd(x^2)','min(x)','max(x)'),
+     c('notNA(x)','mean(x)')
+   ),
+   summ.names = list(
+     c('N','Mean','SD of X^2','Min','Max'),
+     c('Count','Percent')
+   ))
 
 
 
