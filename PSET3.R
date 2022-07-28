@@ -4,8 +4,6 @@ rm(list = ls())
 library("pacman")
 
 
-rm(list = ls())
-
 
 p_load(tidyverse,
        sf,
@@ -46,7 +44,7 @@ train$description <- str_replace_all(train$description, "[^[:alnum:]]", " ")
 train$description <- gsub("\\s+", " ", str_trim(train$description))
 
 
-### encontrar metros y número de baños
+### encontrar metros y n?mero de ba?os
 
 #se crean patrones
 
@@ -78,17 +76,17 @@ metr= "metros"
 #se extraen de acuerdo a los patrones y se crea nueva variable
 train <- train %>% mutate(metros2 = str_extract(string = train$description, pattern = paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af)))
 
-#nos quedamos solo con los valores numéricos
+#nos quedamos solo con los valores num?ricos
 train <- train %>% mutate(metros3 = str_extract(string = train$metros2, pattern = paste0(digit,"|", digit2,"|", digit3,"|", digit4,"|", digit5)))
 
-#remplazamos todos las palabras que tengan el número y la palabra pegada
+#remplazamos todos las palabras que tengan el n?mero y la palabra pegada
 
 train<- train %>% mutate(metros4 = str_replace_all(string = train$metros2, pattern = paste0(mdos, "|", metrostr, "|", metr), replacement = ""))
 
-#lo convertimos a un valor númérico
+#lo convertimos a un valor n?m?rico
 train$metros3 <- as.numeric(train$metros3)
 
-#nos quedamos con la información
+#nos quedamos con la informaci?n
 train <- train %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, metros4))
 
 train$metros_tot <- as.numeric(train$metros_tot)
@@ -117,15 +115,15 @@ train$metrosl2 = NULL
 sum(is.na(train$metros_tot))
 
 
-# sacamos más baños para otros del description
+# sacamos m?s ba?os para otros del description
 
 train <- train %>% mutate(banos2 = str_extract(string = train$description, pattern = paste0(ah,"|",ai))) 
 
 train <- train %>% mutate(banos3 = str_extract(string = train$banos2, pattern = digit))
 
-#se convierte en numérico puesto que se saca de texto
+#se convierte en num?rico puesto que se saca de texto
 train$banos3 <- as.numeric(train$banos3)
-#baños totales
+#ba?os totales
 
 #convertir na a 0
 
@@ -150,7 +148,7 @@ table(train$metros_tot)
 
                                                                  #paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af),0)))
 
-#elimino las variabkes de baños que no uso
+#elimino las variabkes de ba?os que no uso
 
 train$banos2 = NULL
 train$banos3 = NULL
@@ -317,17 +315,17 @@ regmatches(test$description, typos)
 #se extraen de acuerdo a los patrones y se crea nueva variable
 test <- test %>% mutate(metros2 = str_extract(string = test$description, pattern = paste0(x,"|",y,"|",z,"|",aa,"|",ab,"|",ac,"|",ad,"|",ae,"|",af)))
 
-#nos quedamos solo con los valores numéricos
+#nos quedamos solo con los valores num?ricos
 test <- test %>% mutate(metros3 = str_extract(string = test$metros2, pattern = paste0(digit,"|", digit2,"|", digit3,"|", digit4,"|", digit5)))
 
-#remplazamos todos las palabras que tengan el número y la palabra pegada
+#remplazamos todos las palabras que tengan el n?mero y la palabra pegada
 
 test<- test %>% mutate(metros4 = str_replace_all(string = test$metros2, pattern = paste0(mdos, "|", metrostr, "|", metr), replacement = ""))
 
-#lo convertimos a un valor númérico
+#lo convertimos a un valor n?m?rico
 test$metros3 <- as.numeric(test$metros3)
 
-#nos quedamos con la información
+#nos quedamos con la informaci?n
 test <- test %>% mutate(metros_tot = ifelse(is.na(metros3)==T, surface_total, metros4))
 
 test$metros_tot <- as.numeric(test$metros_tot)
@@ -357,15 +355,15 @@ test$mts_tot = NULL
 sum(is.na(test$metros_tot))
 
 
-# sacamos más baños para otros del description
+# sacamos m?s ba?os para otros del description
 
 test <- test %>% mutate(banos2 = str_extract(string = test$description, pattern = paste0(ah,"|",ai))) 
 
 test <- test %>% mutate(banos3 = str_extract(string = test$banos2, pattern = digit))
 
-#se convierte en numérico puesto que se saca de texto
+#se convierte en num?rico puesto que se saca de texto
 test$banos3 <- as.numeric(test$banos3)
-#baños totales
+#ba?os totales
 
 #convertir na a 0
 
@@ -381,7 +379,7 @@ test$tot_banos[test$tot_banos == 0] <- 1
 table(test$tot_banos)                                                                
 
 
-#elimino las variabkes de baños que no uso
+#elimino las variabkes de ba?os que no uso
 
 test$banos2 = NULL
 test$banos3 = NULL
@@ -509,29 +507,29 @@ test <- test %>% mutate(metros_4 = mts_totales2^2)
 test <- test %>% mutate(apartamento = ifelse(property_type =="Apartamento", 1, 0))
 
 test <- test %>% mutate(apartamento_ascensor = apartamento*ascensor9)
-
+rm(test_nevera)
 
 #partimos la base para Bogota y Medellin
 
-train_medallo <- subset(train, train$l3=="Medellín")
-train_nevera <- subset(train, train$l3=="Bogotá D.C")
-test_medallo <- subset(test, test$l3=="Medellín")
-test_nevera <- subset(test, test$l3=="Bogotá D.C")
+train_medallo <- subset(train, train$l3=="MedellÃ­n")
+train_nevera <- subset(train, train$l3=="BogotÃ¡ D.C")
+test_medallo <- subset(test, test$l3=="MedellÃ­n")
+test_nevera <- subset(test, test$l3=="BogotÃ¡ D.C")
 
-
+rm(train_medallo)
 
 ###Preparamos la base de train
 ##ponemos sistema de coordenadas para train Bogota
-train_nevera_1 <- data.frame()
+
 train_nevera_1<-data.frame(place= train_nevera$property_id,
                lat= train_nevera$lat,
                long= train_nevera$lon
                )
 train_nevera_1<-train_nevera_1 %>% mutate(latp=lat,longp=long)
 
-train_nevera_1<-st_as_sf(train_nevera_1,coords=c('longp','latp'),crs=4626)
+train_nevera_2<-st_as_sf(train_nevera_1,coords=c('longp','latp'),crs=4626)
 
-train_nevera$geometry <- train_nevera_1$geometry
+train_nevera$geometry <- train_nevera_2$geometry
 
 ##ponemos sistema de coordenadas para train Medellin
 train_medallo_1<-data.frame(place= train_medallo$property_id,
@@ -540,11 +538,12 @@ train_medallo_1<-data.frame(place= train_medallo$property_id,
 )
 train_medallo_1<-train_medallo_1 %>% mutate(latp=lat,longp=long)
 
-train_medallo<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
+train_medallo_2<-st_as_sf(train_medallo_1,coords=c('longp','latp'),crs=4626)
 
-train_medallo$geometry <- train_medallo_1$geometry
+train_medallo$geometry <- train_medallo_2$geometry
 
-rm(train_medallo_1)
+
+rm(train_medallo_1, train_medallo_2, train_nevera_1, train_nevera_2)
 rm(train_nevera_1)
 #####
 ##Sacamos informaciÃ³n de el Poblado
@@ -556,20 +555,20 @@ PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado",
 #Dejamos con el mismo sistema de coordenadas
 
 st_crs(PH_Poblado)==st_crs(train_medallo$geometry)
-PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(train_medallo$geometry))
+PH_Poblado <- st_transform(PH_Poblado, crs=4626)
 st_crs(PH_Poblado)==st_crs(train_medallo$geometry)
 
 # Observaciones en el poblado 
-Pobladation <- train_medallo[PH_Poblado,]
+#Pobladation <- train_medallo[PH_Poblado,]
 
 leaflet() %>%
   addTiles() %>%
-  addPolygons(data=PH_Poblado, col = "red") %>%
-  addCircles(data=Pobladation)
+  addPolygons(data=PH_Poblado, col = "red")
+  #addCircles(data=Pobladation)
 
 
 ######Definimos el Ã¡rea de chapinero
-chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota", 
+chapi_papi <- getbb(place_name = "UPZ Chapinero Bogota", 
                     featuretype = "boundary:administrative", 
                     format_out = "sf_polygon") %>% .$multipolygon
 #Dejamos con el mismo sistema de coordenadas
@@ -580,13 +579,13 @@ st_crs(chapi_papi)==st_crs(train_nevera$geometry)
 
   # Observaciones en chapinero
 
-chapineration <- train_nevera[chapi_papi,]
+#chapineration <- train_nevera[chapi_papi,]
 
 
 leaflet() %>%
   addTiles() %>% 
-  addPolygons(data=chapi_papi,color="red") %>% 
-  addCircles(data=chapineration)
+  addPolygons(data=chapi_papi,color="red")  
+  #addCircles(data=chapineration)
 
 ####Variables adicionales de OSM##########
 
@@ -613,12 +612,12 @@ uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(train_nevera$geometry))
 st_crs(uni_rolas_new)==st_crs(train_nevera$geometry)
 
 ##Creamos el mapa en OSM para BogotÃ¡
+
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
   addPolygons(data=chapi_papi,color="yellow") %>% 
-  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
-  addCircles(data=chapineration, col = "red")
+  addCircleMarkers(data = transmi_rolos_new, col = "blue")
 
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
@@ -706,79 +705,55 @@ train_medallo <- train_medallo %>%
   mutate(Parque = min_dist_park)
 
 
-############################################
+#################################################################
+#Repetimos para test
+###Preparamos la base de test
+##ponemos sistema de coordenadas para test Bogota
 
-#### Repetimos para la base test
-
-############################################
-test_medallo <- subset(test, test$l3=="Medellín")
-test_nevera <- subset(test, test$l3=="Bogotá D.C")
-
-
-##Preparamos la base de test
-##ponemos sistema de coordenadas para test Bogota y Medellin
 test_nevera_1<-data.frame(place= test_nevera$property_id,
-                        lat= test_nevera$lat,
-                        long= test_nevera$lon
+                          lat= test_nevera$lat,
+                          long= test_nevera$lon
 )
 test_nevera_1<-test_nevera_1 %>% mutate(latp=lat,longp=long)
 
-test_nevera_1<-st_as_sf(test_nevera_1,coords=c('longp','latp'),crs=4626)
+test_nevera_2<-st_as_sf(test_nevera_1,coords=c('longp','latp'),crs=4626)
 
-test_nevera$geometry <- test_nevera_1$geometry
-##ponemos sistema de coordenadas para test Bogota y Medellin
+test_nevera$geometry <- test_nevera_2$geometry
+
+##ponemos sistema de coordenadas para test Medellin
 test_medallo_1<-data.frame(place= test_medallo$property_id,
-                         lat= test_medallo$lat,
-                         long= test_medallo$lon
+                           lat= test_medallo$lat,
+                           long= test_medallo$lon
 )
 test_medallo_1<-test_medallo_1 %>% mutate(latp=lat,longp=long)
 
-test_medallo_1<-st_as_sf(test_medallo_1,coords=c('longp','latp'),crs=4626)
+test_medallo_2<-st_as_sf(test_medallo_1,coords=c('longp','latp'),crs=4626)
 
-test_medallo$geometry <- test_medallo_1$geometry 
+test_medallo$geometry <- test_medallo_2$geometry
 
-rm(test_nevera_1)
-rm(test_medallo_1)
+
+rm(test_medallo_1, test_medallo_2, test_nevera_1, test_nevera_2)
 
 #####
 ##Sacamos informaciÃ³n de el Poblado
 
-#Definimos sÃ³lo el Ã¡rea del poblado
-PH_Poblado <- getbb(place_name = "Comuna 14 - El Poblado", 
-                    featuretype = "boundary:administrative", 
-                    format_out = "sf_polygon") 
-#Dejamos con el mismo sistema de coordenadas
-
-st_crs(PH_Poblado)==st_crs(test_medallo$geometry)
-PH_Poblado <- st_transform(PH_Poblado, crs=st_crs(test_medallo$geometry))
-st_crs(PH_Poblado)==st_crs(test_medallo$geometry)
-
-# Observaciones en el poblado 
-Pobladation <- test_medallo[PH_Poblado,]
 
 leaflet() %>%
   addTiles() %>%
   addPolygons(data=PH_Poblado, col = "red") %>%
-  addCircles(data=Pobladation)
+  addCircles(data=test_medallo)
+#addCircles(data=Pobladation)
 
-
-######Definimos el Ã¡rea de chapinero
-chapi_papi <- getbb(place_name = "UPZ Chapinero, Bogota", 
-                    featuretype = "boundary:administrative", 
-                    format_out = "sf_polygon") %>% .$multipolygon
-#Dejamos con el mismo sistema de coordenadas
-
-st_crs(chapi_papi)==st_crs(test_nevera$geometry)
-chapi_papi <- st_transform(chapi_papi, crs=st_crs(test_nevera$geometry))
-st_crs(chapi_papi)==st_crs(test_nevera$geometry)
 # Observaciones en chapinero
-chapineration <- test_nevera[chapi_papi,]
+
+#chapineration <- test_nevera[chapi_papi,]
 
 
 leaflet() %>%
   addTiles() %>% 
-  addPolygons(data=chapi_papi,color="red") %>% 
-  addCircles(data=chapineration)
+  addPolygons(data=chapi_papi,color="red") %>%
+  addCircles(data=test_nevera)
+
 
 ####Variables adicionales de OSM##########
 
@@ -805,12 +780,12 @@ uni_rolas_new <- st_transform(uni_rolas_geom, crs=st_crs(test_nevera$geometry))
 st_crs(uni_rolas_new)==st_crs(test_nevera$geometry)
 
 ##Creamos el mapa en OSM para BogotÃ¡
+
 leaflet() %>% 
   addTiles()%>%
   addPolygons(data=uni_rolas_geom, col = "green") %>%
   addPolygons(data=chapi_papi,color="yellow") %>% 
-  addCircleMarkers(data = transmi_rolos_new, col = "blue") %>%
-  addCircles(data=chapineration, col = "red")
+  addCircleMarkers(data = transmi_rolos_new, col = "blue")
 
 ####Distancia promedio a universidades de las casas
 # Primero sacamos la distancia a una universidad
@@ -898,13 +873,9 @@ test_medallo <- test_medallo %>%
   mutate(Parque = min_dist_park)
 
 
-
-
-
-
 #################################################################
 
-#estadísticas descriptivas
+#estad?sticas descriptivas
 
 
 install.packages("arsenal")
@@ -962,12 +933,21 @@ train %>%
 ##Modelos de predicciÃ³n. Se correrÃ¡n para Medellin y Bogota para
 #encontrar el mejor modelo para cada ciudad
 
+#Usamos paquede caret para entrenar el modelo
+ctrl <- trainControl(method = "cv",
+                     number = 10,
+                     savePredictions = TRUE,
+                     summaryFunction = FiveStats)
+
+
+###Bogota
 #1 Regresion sin tener en cuenta correlaciÃ³n espacial
 
-reg_1 <-lm( property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 )
-
+reg_1 <-lm(price~ metros_4 + apartamento_ascensor + property_type + tot_banos + mts_totales2 + rooms_tot + bedrooms + conjunto1 + ascensor9 +garaje12 +amoblado8 + Universidad + Transmi, data=train_nevera)
+reg_1
 #2 regresion considerando correlaciÃ³n espacial
-<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
+#<-lagsarlm(violent~est fcs rt+bls unemp, data=chi.poly, W)
 summary(sar.chi)
 
 #########Fin del script
+
